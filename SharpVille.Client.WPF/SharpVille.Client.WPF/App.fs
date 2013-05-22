@@ -19,8 +19,7 @@ open Utils
 
 type MainWindow = XAML<"MainWindow.xaml">
 
-let server = "localhost"
-let player = "test_player"
+let player = "test_player_2"
 
 let emptyPlotBrush   = Brushes.ForestGreen
 let plantedPlotBrush = Brushes.DarkGreen
@@ -28,44 +27,24 @@ let plantedPlotBrush = Brushes.DarkGreen
 let window = new MainWindow()
 let root   = window.Root
 
-let gameState = GameState()
+let gameState = GameState(player, (window.NextLevel :?> Rectangle).Width)
 root.DataContext <- gameState
 
-let setExpBar () = 
-    let expWidth = (window.NextLevel :?> Rectangle).Width * gameState.ExpPercentage
-    (window.Exp :?> Rectangle).Width <- expWidth
+let updateState (response : StateResponse) =
+    gameState.Balance <- response.Balance
+    gameState.Exp     <- response.Exp
+    gameState.Level   <- response.Level
+    gameState.Plants  <- response.Plants
 
 let handshake () = doHandshake player (fun resp ->
-    gameState.State <- Some { 
-                                PlayerId        = player
-                                Exp             = resp.Exp
-                                Level           = resp.Level
-                                Balance         = resp.Balance
-                                FarmDimension   = resp.FarmDimension
-                                Plants          = resp.Plants
-                            }
+    gameState.Dimension <- Some resp.FarmDimension
     gameState.SessionId <- Some resp.SessionId
     gameState.GameSpec  <- Some resp.GameSpecification
-    root.DataContext    <- gameState
-    setExpBar())
 
-let plant x y = doPlant x y gameState.SessionId.Value "S1" (fun resp ->
-    gameState.State <- Some { gameState.State.Value with
-                                Balance = resp.Balance
-                                Exp     = resp.Exp
-                                Level   = resp.Level
-                                Plants  = resp.Plants }
-    root.DataContext <- gameState
-    setExpBar())
+    updateState resp)
 
-let harvest x y = doHarvest x y gameState.SessionId.Value (fun resp ->
-    gameState.State <- Some { gameState.State.Value with
-                                Balance = resp.Balance
-                                Exp     = resp.Exp
-                                Level   = resp.Level
-                                Plants  = resp.Plants }
-    root.DataContext <- gameState
-    setExpBar())
+let plant x y    = doPlant x y gameState.SessionId.Value "S1" updateState
+let harvest x y  = doHarvest x y gameState.SessionId.Value updateState
 
 let getPlotText x y =
     match gameState with
@@ -81,14 +60,14 @@ let onClick x y (plot : Border) =
     | Plant (x, y) plant
         -> let dueDate = plant.DatePlanted.AddSeconds 30.0
            let now = DateTime.UtcNow
-           if now >= dueDate 
+           if now >= dueDate
            then harvest x y
                 plot.Background <- emptyPlotBrush
     | _ -> plant x y
            plot.Background <- plantedPlotBrush
 
 let setUpFarmPlots (container : Grid) =
-    let (Some { FarmDimension = (rows, cols); Plants = plants }) = gameState.State
+    let (Some (rows, cols)) = gameState.Dimension
     let plotWidth  = container.Width / float rows
     let plotHeight = container.Height / float cols 
 
@@ -126,7 +105,7 @@ let setUpFarmPlots (container : Grid) =
             container.Children.Add plot |> ignore
 
 let loadWindow() =
-    handshake()        
+    handshake()
     setUpFarmPlots window.FarmPlotContainer
     window.Root
 

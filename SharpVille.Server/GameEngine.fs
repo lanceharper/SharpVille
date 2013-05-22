@@ -52,12 +52,9 @@ type GameEngine (stateRepo      : IStateRepository,
                        | Some seed -> seed
                        | _         -> failwithf "Invalid SeedId : %s" req.Seed
 
-            if state.Level < seed.RequiredLevel then
-                failwith "Insufficient level"
-            elif state.Balance < seed.Cost then
-                failwith "Insufficient balance"
-            elif state.Plants.ContainsKey req.Position then
-                failwith "Farmplot not empty"            
+            if state.Level < seed.RequiredLevel then failwith "Insufficient level"
+            elif state.Balance < seed.Cost then failwith "Insufficient balance"
+            elif state.Plants.ContainsKey req.Position then failwith "Farmplot not empty"            
 
             let newPlant = { Seed = seed.Id; DatePlanted = DateTime.UtcNow }
             let newExp, newLvl = awardExp state seed.Exp
@@ -77,8 +74,7 @@ type GameEngine (stateRepo      : IStateRepository,
                         | _          -> failwith "No plants found"
 
             let seed = gameSpec.Seeds.[plant.Seed]
-            if DateTime.UtcNow - plant.DatePlanted < seed.GrowthTime then
-                failwith "Plant not harvestable"
+            if DateTime.UtcNow - plant.DatePlanted < seed.GrowthTime then failwith "Plant not harvestable"
 
             let newExp, newLvl = awardExp state seed.Exp
             let newState = { state with Balance = state.Balance + seed.Yield

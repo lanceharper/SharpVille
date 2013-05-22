@@ -11,13 +11,7 @@ open SharpVille.Model.Responses
 
 open GameState
 
-let (|State|_|) (gameState : GameState) = 
-    match gameState.State with | Some state -> Some state | _ -> None
-
-let (|Plant|_|) coordinate (gameState : GameState) =
-    match gameState.State with 
-    | Some { Plants = plants } -> plants.TryFind coordinate
-    | _ -> None
+let (|Plant|_|) coordinate (gameState : GameState) = gameState.Plants.TryFind coordinate
 
 let makeWebRequest<'req, 'res> action (req : 'req) = 
     async {
@@ -37,8 +31,8 @@ let makeWebRequest<'req, 'res> action (req : 'req) =
 
 let doHandshake playerId onSuccess = 
     let req = { PlayerId = playerId; Hash = "" }
-    let response = makeWebRequest<HandshakeRequest, HandshakeResponse> "Handshake" req
-                   |> Async.RunSynchronously
+    let response = makeWebRequest<HandshakeRequest, HandshakeResponse> "Handshake" req 
+                    |> Async.RunSynchronously
     onSuccess response
 
 let doPlant x y sessionId seedId onSuccess =
