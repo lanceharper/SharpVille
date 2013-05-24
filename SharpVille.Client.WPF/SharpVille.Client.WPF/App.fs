@@ -3,10 +3,12 @@
 open System
 open System.IO
 open System.Net.Http
+open System.Threading
 open System.Windows
 open System.Windows.Controls
 open System.Windows.Media
 open System.Windows.Shapes
+open System.Windows.Threading
 open FSharpx
 
 open SharpVille.Common
@@ -30,21 +32,35 @@ let root   = window.Root
 let gameState = GameState(player, (window.NextLevel :?> Rectangle).Width)
 root.DataContext <- gameState
 
-let updateState (response : StateResponse) =
-    gameState.Balance <- response.Balance
-    gameState.Exp     <- response.Exp
-    gameState.Level   <- response.Level
-    gameState.Plants  <- response.Plants
+let updateState syncContext (response : StateResponse) =
+    async {
+        gameState.Balance <- response.Balance
+        gameState.Exp     <- response.Exp
+        gameState.Level   <- response.Level
+        gameState.Plants  <- response.Plants    
 
-let handshake () = doHandshake player (fun resp ->
+        let expProgress = 
+            match gameState.GameSpec with
+            | Some { Levels = lvls } -> 
+                let currLvlExp = lvls.[gameState.Level]
+                match lvls.TryFind (gameState.Level + 1<lvl>) with 
+                | Some nxtLvlExp -> float (gameState.Exp - currLvlExp) / float (nxtLvlExp - currLvlExp)
+                | _ -> 0.0
+            | _ -> 0.0
+
+        do! Async.SwitchToContext syncContext
+        (window.Exp :?> Rectangle).Width <- (window.NextLevel :?> Rectangle).Width * expProgress
+    }    
+
+let handshake syncContext = doHandshake player (fun resp ->
     gameState.Dimension <- Some resp.FarmDimension
     gameState.SessionId <- Some resp.SessionId
     gameState.GameSpec  <- Some resp.GameSpecification
 
-    updateState resp)
+    updateState syncContext resp)
 
-let plant x y    = doPlant x y gameState.SessionId.Value "S1" updateState
-let harvest x y  = doHarvest x y gameState.SessionId.Value updateState
+let plant x y syncContext   = doPlant x y gameState.SessionId.Value "S1" <| updateState syncContext
+let harvest x y syncContext = doHarvest x y gameState.SessionId.Value    <| updateState syncContext
 
 let getPlotText x y =
     match gameState with
@@ -55,58 +71,75 @@ let getPlotText x y =
            else sprintf "%ds" (dueDate - now).Seconds
     | _ -> "Plant"
 
-let onClick x y (plot : Border) =
-    match gameState with
-    | Plant (x, y) plant
-        -> let dueDate = plant.DatePlanted.AddSeconds 30.0
-           let now = DateTime.UtcNow
-           if now >= dueDate
-           then harvest x y
-                plot.Background <- emptyPlotBrush
-    | _ -> plant x y
-           plot.Background <- plantedPlotBrush
+let onClick x y syncContext (plot : Border) =
+    async { 
+        match gameState with
+        | Plant (x, y) plant
+            -> let dueDate = plant.DatePlanted.AddSeconds 30.0
+               let now = DateTime.UtcNow
+               if now >= dueDate
+               then do! harvest x y syncContext
+                    do! Async.SwitchToContext syncContext
+                    plot.Background <- emptyPlotBrush
+                    do! Async.SwitchToThreadPool()
+        | _ -> do! plant x y syncContext
+               do! Async.SwitchToContext syncContext
+               plot.Background <- plantedPlotBrush
+               do! Async.SwitchToThreadPool()
+    }
 
-let setUpFarmPlots (container : Grid) =
-    let (Some (rows, cols)) = gameState.Dimension
-    let plotWidth  = container.Width / float rows
-    let plotHeight = container.Height / float cols 
+let setUpFarmPlots syncContext (container : Grid) =  
+    async {
+        let (Some (rows, cols)) = gameState.Dimension
 
-    { 0..rows-1 } |> Seq.iter (fun _ ->
-         new RowDefinition(Height = new GridLength(plotHeight)) 
-         |> container.RowDefinitions.Add)
-    { 0..cols-1 } |> Seq.iter (fun _ -> 
-        new ColumnDefinition() |> container.ColumnDefinitions.Add)
+        do! Async.SwitchToContext syncContext
 
-    for rowNum = 0 to rows - 1 do
-        for colNum = 0 to cols - 1 do
-            let plot = new Border()
-            plot.Width  <- plotWidth
-            plot.Height <- plotHeight
-            plot.Background      <- match gameState with
-                                    | Plant (rowNum, colNum) _ -> plantedPlotBrush
-                                    | _ -> emptyPlotBrush
-            plot.BorderBrush     <- Brushes.Black
-            plot.BorderThickness <- new Thickness(0.0)
+        let plotWidth  = container.Width / float rows
+        let plotHeight = container.Height / float cols
+
+        { 0..rows-1 } |> Seq.iter (fun _ ->
+             new RowDefinition(Height = new GridLength(plotHeight)) 
+             |> container.RowDefinitions.Add)
+        { 0..cols-1 } |> Seq.iter (fun _ -> 
+            new ColumnDefinition() |> container.ColumnDefinitions.Add)
+
+        for rowNum = 0 to rows - 1 do
+            for colNum = 0 to cols - 1 do
+                let plot = new Border()
+                plot.Width  <- plotWidth
+                plot.Height <- plotHeight
+                plot.Background      <- match gameState with
+                                        | Plant (rowNum, colNum) _ -> plantedPlotBrush
+                                        | _ -> emptyPlotBrush
+                plot.BorderBrush     <- Brushes.Black
+                plot.BorderThickness <- new Thickness(0.0)
          
-            plot.MouseEnter.Add(fun evt -> plot.BorderThickness <- new Thickness(2.0))
-            plot.MouseEnter.Add(fun evt -> 
-                let label = new Label()
-                label.Content <- getPlotText rowNum colNum
-                plot.Child <- label)
+                plot.MouseEnter.Add(fun evt -> plot.BorderThickness <- new Thickness(2.0))
+                plot.MouseEnter.Add(fun evt -> 
+                    let label = new Label()
+                    label.Content <- getPlotText rowNum colNum
+                    plot.Child <- label)
 
-            plot.MouseDown.Add(fun evt -> onClick rowNum colNum plot |> ignore)
+                plot.MouseDown.Add(fun evt -> onClick rowNum colNum syncContext plot |> Async.Start)
 
-            plot.MouseLeave.Add(fun evt -> plot.BorderThickness <- new Thickness(0.0))
-            plot.MouseLeave.Add(fun evt -> plot.Child <- null)
+                plot.MouseLeave.Add(fun evt -> plot.BorderThickness <- new Thickness(0.0))
+                plot.MouseLeave.Add(fun evt -> plot.Child <- null)
             
-            Grid.SetRow(plot, rowNum)
-            Grid.SetColumn(plot, colNum)
+                Grid.SetRow(plot, rowNum)
+                Grid.SetColumn(plot, colNum)
 
-            container.Children.Add plot |> ignore
+                container.Children.Add plot |> ignore
+    }
 
-let loadWindow() =
-    handshake()
-    setUpFarmPlots window.FarmPlotContainer
+let loadWindow() = 
+    let syncContext = new DispatcherSynchronizationContext(Application.Current.Dispatcher);
+    Threading.SynchronizationContext.SetSynchronizationContext(syncContext);
+
+    async {
+        do! handshake syncContext
+        do! setUpFarmPlots syncContext window.FarmPlotContainer
+    } |> Async.Start
+
     window.Root
 
 [<STAThread>]

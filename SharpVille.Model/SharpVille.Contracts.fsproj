@@ -10,7 +10,7 @@
     <RootNamespace>SharpVille.Model</RootNamespace>
     <AssemblyName>SharpVille.Model</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <Name>SharpVille.Model</Name>
+    <Name>SharpVille.Contracts</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

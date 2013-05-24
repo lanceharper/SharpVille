@@ -33,7 +33,7 @@
                        HorizontalAlignment="Left" Width="200"></Rectangle>
             <Rectangle Name="Exp"
                        Grid.Column="2" Fill="DodgerBlue" Margin="10"
-                       HorizontalAlignment="Left" Width="{Binding ExpBarWidth}"></Rectangle>
+                       HorizontalAlignment="Left" Width="0"></Rectangle>
         </Grid>
             
         <Grid Name="FarmPlotContainer" Grid.Row="1" 

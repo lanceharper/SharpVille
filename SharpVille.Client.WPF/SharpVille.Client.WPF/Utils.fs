@@ -1,5 +1,6 @@
 ﻿module Utils
 
+open System
 open System.IO
 open System.Net.Http
 open System.Windows.Media
@@ -30,19 +31,22 @@ let makeWebRequest<'req, 'res> action (req : 'req) =
     }
 
 let doHandshake playerId onSuccess = 
-    let req = { PlayerId = playerId; Hash = "" }
-    let response = makeWebRequest<HandshakeRequest, HandshakeResponse> "Handshake" req 
-                    |> Async.RunSynchronously
-    onSuccess response
+    async {
+        let req = { PlayerId = playerId; Hash = "" }
+        let! response = makeWebRequest<HandshakeRequest, HandshakeResponse> "Handshake" req
+        do! onSuccess response
+    }
 
 let doPlant x y sessionId seedId onSuccess =
-    let req = { SessionId = sessionId; Position = (x, y); Seed = seedId }
-    let response = makeWebRequest<PlantRequest, PlantResponse> "Plant" req
-                   |> Async.RunSynchronously
-    onSuccess response
+    async {
+        let req = { SessionId = sessionId; Position = (x, y); Seed = seedId }
+        let! response = makeWebRequest<PlantRequest, PlantResponse> "Plant" req        
+        do! onSuccess response
+    }
 
 let doHarvest x y sessionId onSuccess =
-    let req : HarvestRequest = { SessionId = sessionId; Position = (x, y) }
-    let response = makeWebRequest<HarvestRequest, HarvestResponse> "Harvest" req
-                   |> Async.RunSynchronously
-    onSuccess response
+    async {
+        let req : HarvestRequest = { SessionId = sessionId; Position = (x, y) }
+        let! response = makeWebRequest<HarvestRequest, HarvestResponse> "Harvest" req
+        do! onSuccess response
+    }

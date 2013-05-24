@@ -26,15 +26,6 @@ type GameState (playerId, fullExpBarWidth) =
     member this.Exp       with get ()     = exp
                           and  set value  = exp <- value
                                             event.Trigger(this, PropertyChangedEventArgs("Exp"))
-                                            event.Trigger(this, PropertyChangedEventArgs("ExpBarWidth"))
-    member this.ExpBarWidth               =
-        match gameSpec with
-        | Some { Levels = lvls } -> 
-            let currLvlExp = lvls.[this.Level]
-            match lvls.TryFind (this.Level + 1<lvl>) with 
-            | Some nxtLvlExp -> fullExpBarWidth * float (this.Exp - currLvlExp) / float (nxtLvlExp - currLvlExp)
-            | _ -> 0.0
-        | _ -> 0.0
     member this.Level     with get ()     = level
                           and  set value  = level <- value
                                             event.Trigger(this, PropertyChangedEventArgs("Level"))

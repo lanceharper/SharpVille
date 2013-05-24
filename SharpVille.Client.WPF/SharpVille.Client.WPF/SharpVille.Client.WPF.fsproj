@@ -82,8 +82,8 @@
       <Project>{4475af7c-d289-4cd2-8475-599fa921bc3c}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\..\SharpVille.Model\SharpVille.Model.fsproj">
-      <Name>SharpVille.Model</Name>
+    <ProjectReference Include="..\..\SharpVille.Model\SharpVille.Contracts.fsproj">
+      <Name>SharpVille.Contracts</Name>
       <Project>{9bde8193-cca3-4898-b807-9cb3d5f0539d}</Project>
       <Private>True</Private>
     </ProjectReference>
