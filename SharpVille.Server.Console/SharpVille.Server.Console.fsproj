@@ -49,6 +49,11 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SharpVille.Model\SharpVille.Contracts.fsproj">
+      <Name>SharpVille.Contracts</Name>
+      <Project>{9bde8193-cca3-4898-b807-9cb3d5f0539d}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\SharpVille.Server\SharpVille.Server.fsproj">
       <Name>SharpVille.Server</Name>
       <Project>{f547006b-74c2-4157-9689-82c31bc24597}</Project>

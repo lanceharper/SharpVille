@@ -9,6 +9,7 @@ open System.Windows.Controls
 open System.Windows.Media
 open System.Windows.Shapes
 open System.Windows.Threading
+
 open FSharpx
 
 open SharpVille.Common
@@ -29,7 +30,7 @@ let plantedPlotBrush = Brushes.DarkGreen
 let window = new MainWindow()
 let root   = window.Root
 
-let gameState = GameState(player, (window.NextLevel :?> Rectangle).Width)
+let gameState = GameState(player)
 root.DataContext <- gameState
 
 let updateState syncContext (response : StateResponse) =

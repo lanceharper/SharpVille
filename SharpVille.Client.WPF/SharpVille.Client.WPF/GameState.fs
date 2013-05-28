@@ -4,7 +4,7 @@ open System.ComponentModel
 
 open SharpVille.Model
 
-type GameState (playerId, fullExpBarWidth) =
+type GameState (playerId : PlayerId) =
     let mutable sessionId : SessionId option         = None
     let mutable gameSpec  : GameSpecification option = None
     let mutable dimension : Coordinate option        = None
@@ -22,21 +22,22 @@ type GameState (playerId, fullExpBarWidth) =
                           and  set value  = gameSpec <- value
     member this.Dimension with get ()     = dimension
                           and  set value  = dimension <- value
-                                            event.Trigger(this, PropertyChangedEventArgs("Dimension"))
-    member this.Exp       with get ()     = exp
-                          and  set value  = exp <- value
-                                            event.Trigger(this, PropertyChangedEventArgs("Exp"))
-    member this.Level     with get ()     = level
-                          and  set value  = level <- value
-                                            event.Trigger(this, PropertyChangedEventArgs("Level"))
-                                            event.Trigger(this, PropertyChangedEventArgs("ExpBarWidth"))
-    member this.Balance   with get ()     = balance
-                          and  set value  = balance <- value
-                                            event.Trigger(this, PropertyChangedEventArgs("Balance"))
     member this.Plants    with get ()     = plants
                           and  set value  = plants <- value
-                                            event.Trigger(this, PropertyChangedEventArgs("Plants"))
 
+    member this.Exp
+        with get ()     = exp
+        and  set value  = exp <- value
+                          event.Trigger(this, PropertyChangedEventArgs("Exp"))
+    member this.Level
+        with get ()     = level
+        and  set value  = level <- value
+                          event.Trigger(this, PropertyChangedEventArgs("Level"))
+    member this.Balance
+        with get ()     = balance
+        and  set value  = balance <- value
+                          event.Trigger(this, PropertyChangedEventArgs("Balance"))
+    
     interface INotifyPropertyChanged with
         [<CLIEvent>]
         member this.PropertyChanged = event.Publish

@@ -37,34 +37,50 @@ type GameEngine (stateRepo      : IStateRepository,
             let session = { Id = Guid.NewGuid(); PlayerId = req.PlayerId }
             sessionStore.Put(session)
 
-            let state = match stateRepo.Get req.PlayerId with 
-                        | None   -> let state = { gameSpec.DefaultState with PlayerId = req.PlayerId }
-                                    stateRepo.Put(state)
-                                    state
-                        | Some x -> x
+            let state = 
+                match stateRepo.Get req.PlayerId with 
+                | None -> 
+                    let state = { gameSpec.DefaultState with 
+                                    PlayerId = req.PlayerId }
+                    stateRepo.Put(state)
+                    state
+                | Some x -> x
 
-            HandshakeResponse(state.Exp, state.Level, state.Balance, state.Plants, state.FarmDimension, session.Id, gameSpec)        
+            HandshakeResponse(state.Exp, state.Level, state.Balance, 
+                              state.Plants, 
+                              state.FarmDimension, 
+                              session.Id, 
+                              gameSpec)
 
         member this.Plant (req : PlantRequest) = 
             let state = getState req.SessionId
 
             let seed = match gameSpec.Seeds.TryFind req.Seed with
                        | Some seed -> seed
-                       | _         -> failwithf "Invalid SeedId : %s" req.Seed
+                       | _ -> failwithf "Invalid SeedId : %s" req.Seed
 
-            if state.Level < seed.RequiredLevel then failwith "Insufficient level"
-            elif state.Balance < seed.Cost then failwith "Insufficient balance"
-            elif state.Plants.ContainsKey req.Position then failwith "Farmplot not empty"            
+            if state.Level < seed.RequiredLevel then 
+                failwith "Insufficient level"
+            elif state.Balance < seed.Cost then 
+                failwith "Insufficient balance"
+            elif state.Plants.ContainsKey req.Position then 
+                failwith "Farmplot not empty"
 
-            let newPlant = { Seed = seed.Id; DatePlanted = DateTime.UtcNow }
+            let newPlant = { 
+                              Seed = seed.Id
+                              DatePlanted = DateTime.UtcNow 
+                           }
             let newExp, newLvl = awardExp state seed.Exp
-            let newState = { state with Balance = state.Balance - seed.Cost
-                                        Plants  = state.Plants.Add(req.Position, newPlant)
-                                        Exp     = newExp
-                                        Level   = newLvl }
+            let newState = 
+                { state with 
+                    Balance = state.Balance - seed.Cost
+                    Plants  = state.Plants.Add(req.Position, newPlant)
+                    Exp     = newExp
+                    Level   = newLvl }
             stateRepo.Put(newState)
 
-            PlantResponse(newState.Exp, newState.Level, newState.Balance, newState.Plants)
+            PlantResponse(newState.Exp, newState.Level, newState.Balance, 
+                          newState.Plants)
 
         member this.Harvest (req : HarvestRequest) =
             let state = getState req.SessionId
@@ -74,13 +90,17 @@ type GameEngine (stateRepo      : IStateRepository,
                         | _          -> failwith "No plants found"
 
             let seed = gameSpec.Seeds.[plant.Seed]
-            if DateTime.UtcNow - plant.DatePlanted < seed.GrowthTime then failwith "Plant not harvestable"
+            if DateTime.UtcNow - plant.DatePlanted < seed.GrowthTime then 
+                failwith "Plant not harvestable"
 
             let newExp, newLvl = awardExp state seed.Exp
-            let newState = { state with Balance = state.Balance + seed.Yield
-                                        Plants  = state.Plants.Remove(req.Position)
-                                        Exp     = newExp
-                                        Level   = newLvl }
+            let newState = 
+                { state with 
+                    Balance = state.Balance + seed.Yield
+                    Plants  = state.Plants.Remove(req.Position)
+                    Exp     = newExp
+                    Level   = newLvl }
             stateRepo.Put(newState)
 
-            HarvestResponse(newState.Exp, newState.Level, newState.Balance, newState.Plants)
+            HarvestResponse(newState.Exp, newState.Level, newState.Balance, 
+                            newState.Plants)
