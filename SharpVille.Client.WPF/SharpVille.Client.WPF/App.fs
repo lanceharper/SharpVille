@@ -50,7 +50,9 @@ let updateState syncContext (response : StateResponse) =
             | _ -> 0.0
 
         do! Async.SwitchToContext syncContext
-        (window.Exp :?> Rectangle).Width <- (window.NextLevel :?> Rectangle).Width * expProgress
+        let fullExpBarWidth = (window.NextLevel :?> Rectangle).Width
+        let expBarWidth = fullExpBarWidth * expProgress
+        (window.Exp :?> Rectangle).Width <- expBarWidth
     }    
 
 let handshake syncContext = doHandshake player (fun resp ->
@@ -60,8 +62,10 @@ let handshake syncContext = doHandshake player (fun resp ->
 
     updateState syncContext resp)
 
-let plant x y syncContext   = doPlant x y gameState.SessionId.Value "S1" <| updateState syncContext
-let harvest x y syncContext = doHarvest x y gameState.SessionId.Value    <| updateState syncContext
+let plant x y syncContext   = 
+    doPlant x y gameState.SessionId.Value "S1" <| updateState syncContext
+let harvest x y syncContext = 
+    doHarvest x y gameState.SessionId.Value    <| updateState syncContext
 
 let getPlotText x y =
     match gameState with
@@ -133,8 +137,9 @@ let setUpFarmPlots syncContext (container : Grid) =
     }
 
 let loadWindow() = 
-    let syncContext = new DispatcherSynchronizationContext(Application.Current.Dispatcher);
-    Threading.SynchronizationContext.SetSynchronizationContext(syncContext);
+    let syncContext = 
+        new DispatcherSynchronizationContext(Application.Current.Dispatcher)
+    Threading.SynchronizationContext.SetSynchronizationContext(syncContext)
 
     async {
         do! handshake syncContext
