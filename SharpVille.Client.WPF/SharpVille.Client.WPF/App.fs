@@ -45,7 +45,10 @@ let updateState syncContext (response : StateResponse) =
             | Some { Levels = lvls } -> 
                 let currLvlExp = lvls.[gameState.Level]
                 match lvls.TryFind (gameState.Level + 1<lvl>) with 
-                | Some nxtLvlExp -> float (gameState.Exp - currLvlExp) / float (nxtLvlExp - currLvlExp)
+                | Some nxtLvlExp -> 
+                    let prog = float (gameState.Exp - currLvlExp) 
+                    let toNextLvl = float (nxtLvlExp - currLvlExp)
+                    prog / toNextLvl
                 | _ -> 0.0
             | _ -> 0.0
 
@@ -113,21 +116,25 @@ let setUpFarmPlots syncContext (container : Grid) =
                 let plot = new Border()
                 plot.Width  <- plotWidth
                 plot.Height <- plotHeight
-                plot.Background      <- match gameState with
-                                        | Plant (rowNum, colNum) _ -> plantedPlotBrush
-                                        | _ -> emptyPlotBrush
+                plot.Background      <- 
+                    match gameState with
+                    | Plant (rowNum, colNum) _ -> plantedPlotBrush
+                    | _ -> emptyPlotBrush
                 plot.BorderBrush     <- Brushes.Black
                 plot.BorderThickness <- new Thickness(0.0)
          
-                plot.MouseEnter.Add(fun evt -> plot.BorderThickness <- new Thickness(2.0))
+                plot.MouseEnter.Add(fun evt -> 
+                    plot.BorderThickness <- new Thickness(2.0))
                 plot.MouseEnter.Add(fun evt -> 
                     let label = new Label()
                     label.Content <- getPlotText rowNum colNum
                     plot.Child <- label)
 
-                plot.MouseDown.Add(fun evt -> onClick rowNum colNum syncContext plot |> Async.Start)
+                plot.MouseDown.Add(fun evt -> 
+                    onClick rowNum colNum syncContext plot |> Async.Start)
 
-                plot.MouseLeave.Add(fun evt -> plot.BorderThickness <- new Thickness(0.0))
+                plot.MouseLeave.Add(fun evt -> 
+                    plot.BorderThickness <- new Thickness(0.0))
                 plot.MouseLeave.Add(fun evt -> plot.Child <- null)
             
                 Grid.SetRow(plot, rowNum)
