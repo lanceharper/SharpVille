@@ -9,11 +9,6 @@ open SharpVille.Model
 open SharpVille.Server.DAL
 open SharpVille.Server.GameEngine
 
-open Microsoft.FSharp.Quotations
-open Microsoft.FSharp.Linq.QuotationEvaluation
-open Microsoft.FSharp.Reflection
-open Microsoft.FSharp.Core
-
 let inline handleReq (f : 'req -> 'resp) = 
     (fun (req : HttpListenerRequest) (resp : HttpListenerResponse) -> 
         async {

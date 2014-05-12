@@ -12,9 +12,6 @@ open SharpVille.Model.Responses
 
 open GameState
 
-let (|Plant|_|) coordinate (gameState : GameState) = 
-    gameState.Plants.TryFind coordinate
-
 let makeWebRequest<'req, 'res> action (req : 'req) = 
     async {
         let url = sprintf "http://localhost:80/SharpVille/%s" action

@@ -22,7 +22,7 @@ open Utils
 
 type MainWindow = XAML<"MainWindow.xaml">
 
-let player = "test_player_2"
+let player = "test_player"
 
 let emptyPlotBrush   = Brushes.ForestGreen
 let plantedPlotBrush = Brushes.DarkGreen
@@ -69,6 +69,9 @@ let plant x y syncContext   =
     doPlant x y gameState.SessionId.Value "S1" <| updateState syncContext
 let harvest x y syncContext = 
     doHarvest x y gameState.SessionId.Value    <| updateState syncContext
+
+let (|Plant|_|) coordinate (gameState : GameState) = 
+    gameState.Plants.TryFind coordinate
 
 let getPlotText x y =
     match gameState with
